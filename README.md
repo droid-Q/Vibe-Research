@@ -177,9 +177,9 @@ Vibe-Research 用到的数据 / 工具，来自同一套自研开源体系（都
 
 ## 🙏 致谢
 
-- A 股数据引擎：[a-stock-data](https://github.com/simonlin1212/a-stock-data)（作者：Simon）
-- 美股 / 港股数据引擎：[global-stock-data](https://github.com/simonlin1212/global-stock-data)（作者：Simon）
-- 资讯：[investment-news](https://github.com/simonlin1212/investment-news)（作者：Simon）
+- A 股数据引擎：[a-stock-data](https://github.com/simonlin1212/a-stock-data)（作者：Simonlin1212）
+- 美股 / 港股数据引擎：[global-stock-data](https://github.com/simonlin1212/global-stock-data)（作者：Simonlin1212）
+- 资讯：[investment-news](https://github.com/simonlin1212/investment-news)（作者：Simonlin1212）
 - 界面设计语言参考并致谢：[HKUDS/Vibe-Trading](https://github.com/HKUDS/Vibe-Trading)（作者：HKUDS · 仅借鉴 UI，底层为全新实现）
 
 ## ⚠️ 免责声明
