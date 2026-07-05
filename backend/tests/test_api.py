@@ -51,3 +51,18 @@ def test_chat_cli_not_installed_400():
     })
     # qwen 一般未装 → 400；若恰好装了 qwen 则会进流式（放宽断言）
     assert r.status_code in (400, 200)
+
+
+def test_global_stock_404(monkeypatch):
+    """无法解析的美股/港股代码 → 404（不 500、不崩）。"""
+    import gstock
+    monkeypatch.setattr(gstock, "us_hk_stock", lambda q: {})
+    assert client.get("/api/global/stock?symbol=ZZZZ").status_code == 404
+
+
+def test_gstock_quote_full_null_shape():
+    """行情取不到时 `_quote_from({})` 仍返回完整 null 形状（契合 GlobalQuote 类型），不是空 dict。"""
+    import gstock
+    q = gstock._quote_from({})
+    assert set(q) == {"code", "name", "price", "open", "high", "low", "prev_close", "amount", "mcap", "change_pct"}
+    assert all(v is None for v in q.values())

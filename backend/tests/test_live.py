@@ -88,3 +88,18 @@ def test_turnover_top_shape():
         assert set(rows[0]) == {"code", "name", "price", "pct", "amount", "mcap", "float_cap", "industry"}
         amts = [r["amount"] for r in rows if r["amount"] is not None]
         assert amts == sorted(amts, reverse=True)  # 成交额降序
+
+
+@pytest.mark.live
+def test_global_indices_and_stock():
+    """美股 / 港股：全球指数 + 个股（AAPL / 00700）shape；精确代码匹配挑正股。"""
+    import gstock
+    idx = gstock.global_indices()
+    assert isinstance(idx, list)
+    if idx:
+        assert {"key", "name", "region", "price", "change_pct"} <= set(idx[0])
+    aapl = gstock.us_hk_stock("AAPL")
+    assert aapl.get("code") == "AAPL" and aapl.get("market") == "NASDAQ"  # 正股，非票据/ETF
+    assert aapl["quote"]["price"] is not None
+    hk = gstock.us_hk_stock("00700")
+    assert hk.get("market") == "HK"

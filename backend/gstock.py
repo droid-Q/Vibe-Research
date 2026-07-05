@@ -90,28 +90,48 @@ def global_indices() -> list[dict]:
     return out
 
 
-def resolve_symbol(query: str) -> dict | None:
-    """东财搜索：代码/名称 → {code, name, secid_prefix, secucode, market}。只认美股/港股。"""
+def _search(q: str) -> dict | None:
+    """东财搜索一次：市场过滤 + **精确代码匹配优先**，退而取第一条。
+
+    只按 MktNum 过滤挑不出正股——东财搜 AAPL 会混入 AAPL22(票据)/AAPB(2倍做多ETF)，
+    搜 BABA 混入 05593(窝轮)，且 SecurityType 分不开(正股与 ETF 同为 Type7、正股港股与窝轮同为 Type6)。
+    正股的 Code 恰好等于查询词，故精确匹配 Code==q 最稳；无精确匹配(名称查询)才退回第一条。
+    """
     url = "https://searchapi.eastmoney.com/api/suggest/get"
-    params = {"input": query, "type": 14,
+    params = {"input": q, "type": 14,
               "token": "D43BF722C8E33BDC906FB84D85E326E8", "count": 10}
     try:
         r = astock.em_get(url, params=params, headers=_UA_H, timeout=10)
         rows = (r.json().get("QuotationCodeTable") or {}).get("Data") or []
     except Exception:
         return None
+    matches = []
     for s in rows:
         try:
             mkt = int(s.get("MktNum"))
         except (TypeError, ValueError):
             continue
-        if mkt not in _MKT:
-            continue
-        suffix, market = _MKT[mkt]
-        code = s.get("Code", "")
-        return {"code": code, "name": s.get("Name", ""), "secid_prefix": mkt,
-                "secucode": f"{code}{suffix}", "market": market}
-    return None
+        if mkt in _MKT:
+            matches.append((mkt, s))
+    if not matches:
+        return None
+    mkt, s = next(((m, x) for m, x in matches if str(x.get("Code", "")).upper() == q), matches[0])
+    suffix, market = _MKT[mkt]
+    code = s.get("Code", "")
+    return {"code": code, "name": s.get("Name", ""), "secid_prefix": mkt,
+            "secucode": f"{code}{suffix}", "market": market}
+
+
+def resolve_symbol(query: str) -> dict | None:
+    """代码/名称 → {code, name, secid_prefix, secucode, market}。只认美股/港股。
+    数字型港股短代码（如 `700`）补零到 5 位再试一次（东财按 `00700` 收）。"""
+    q = query.strip().upper()
+    if not q:
+        return None
+    hit = _search(q)
+    if hit is None and q.isdigit() and len(q) < 5:
+        hit = _search(q.zfill(5))
+    return hit
 
 
 def _key_metrics(secucode: str) -> dict | None:
@@ -143,7 +163,7 @@ def us_hk_stock(query: str) -> dict:
     if not info:
         return {}
     d = _push2_stock_get(f"{info['secid_prefix']}.{info['code']}", _QUOTE_FIELDS)
-    quote = _quote_from(d) if d else {}
+    quote = _quote_from(d or {})  # 行情临时取不到也返回完整 null 形状，契合 GlobalQuote 类型
     return {
         "code": info["code"],
         "name": info["name"] or quote.get("name") or info["code"],
