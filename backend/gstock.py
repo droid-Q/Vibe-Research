@@ -31,7 +31,8 @@ _INDICES = (
 )
 
 # 搜索返回的 MktNum → (secucode 后缀, 市场名)
-_MKT = {105: (".O", "NASDAQ"), 106: (".N", "NYSE"), 107: (".O", "US"), 116: (".HK", "HK")}
+_MKT = {105: (".O", "NASDAQ"), 106: (".N", "NYSE"), 107: (".O", "US"), 116: (".HK", "HK"),
+        177: (".KS", "KR")}  # 177=韩股（Kospi/Kosdaq，含三星/SK海力士等半导体龙头）；东财仅行情、无 F10 财务
 
 _QUOTE_FIELDS = "f43,f44,f45,f46,f48,f57,f58,f59,f60,f116,f170"
 
@@ -57,7 +58,9 @@ def _price(d: dict, key: str):
     v = d.get(key)
     if not isinstance(v, (int, float)):
         return None
-    dec = d.get("f59") or 2
+    dec = d.get("f59")
+    if not isinstance(dec, int):  # 注意：不能用 `or 2`——韩元等 f59=0 会被误判成 2，价格被多除 100 倍
+        dec = 2
     return round(v / (10 ** dec), dec)
 
 
@@ -123,11 +126,17 @@ def _search(q: str) -> dict | None:
 
 
 def resolve_symbol(query: str) -> dict | None:
-    """代码/名称 → {code, name, secid_prefix, secucode, market}。只认美股/港股。
-    数字型港股短代码（如 `700`）补零到 5 位再试一次（东财按 `00700` 收）。"""
+    """代码/名称 → {code, name, secid_prefix, secucode, market}。认美股/港股/韩股。
+    数字型港股短代码（如 `700`）补零到 5 位再试一次（东财按 `00700` 收）。
+    韩股用国际后缀 `.KS`/`.KQ`/`.KR`（如三星 `005930.KS`）——韩股代码与 A 股同为 6 位数字，
+    需显式后缀区分，否则前端会按 A 股处理、后端也搜不到韩股。"""
     q = query.strip().upper()
     if not q:
         return None
+    for suf in (".KS", ".KQ", ".KR"):  # 剥掉韩股后缀，按裸代码搜（东财 177=韩股）
+        if q.endswith(suf):
+            q = q[: -len(suf)]
+            break
     hit = _search(q)
     if hit is None and q.isdigit() and len(q) < 5:
         hit = _search(q.zfill(5))
@@ -169,5 +178,5 @@ def us_hk_stock(query: str) -> dict:
         "name": info["name"] or quote.get("name") or info["code"],
         "market": info["market"],
         "quote": quote,
-        "metrics": _key_metrics(info["secucode"]),
+        "metrics": _key_metrics(info["secucode"]) if info["market"] != "KR" else None,  # 韩股东财无 F10 财务
     }

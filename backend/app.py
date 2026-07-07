@@ -14,7 +14,7 @@ import os
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
 import astock
@@ -24,6 +24,7 @@ import gstock
 import newsradar
 import portfolio as pf
 import market
+import myreports as mr
 
 app = FastAPI(title="Vibe-Research API", version="0.1.0")
 
@@ -140,14 +141,51 @@ def portfolio_add(h: HoldingIn):
     code = (h.code or "").strip()
     if not code.isdigit() or len(code) != 6:
         raise HTTPException(400, "代码必须是 6 位数字")
-    if h.shares <= 0 or h.cost <= 0:
-        raise HTTPException(400, "数量与成本价必须大于 0")
+    if h.shares <= 0:
+        raise HTTPException(400, "数量必须大于 0")
+    # 成本价不限正负：融券 / 返息 / 摊薄后为负成本等情形按结果计算，用户想怎么输就怎么输。
     return {"data": pf.add_holding(code, h.shares, h.cost)}
 
 
 @app.delete("/api/portfolio/holding")
 def portfolio_remove(code: str = Query(...)):
     return {"data": pf.remove_holding(code.strip())}
+
+
+# ---- 我的研报（用户上传自己的研报，存本地、不上传、不进开源仓库）----
+
+class ReportIn(BaseModel):
+    name: str
+    content_b64: str
+
+
+@app.get("/api/myreports")
+def myreports_list():
+    return {"data": mr.list_reports()}
+
+
+@app.post("/api/myreports")
+def myreports_upload(r: ReportIn):
+    """上传一份研报（base64）→ 存本地 + 按文件名自动打行业标签。"""
+    try:
+        return {"data": mr.save_report(r.name, r.content_b64)}
+    except mr.ReportError as e:
+        raise HTTPException(400, str(e)) from e
+
+
+@app.get("/api/myreports/file/{rid}")
+def myreports_file(rid: str):
+    """下载/预览某份研报原文件。"""
+    hit = mr.report_path(rid)
+    if not hit:
+        raise HTTPException(404, "研报不存在")
+    path, name = hit
+    return FileResponse(str(path), filename=name)
+
+
+@app.delete("/api/myreports/{rid}")
+def myreports_delete(rid: str):
+    return {"data": {"ok": mr.delete_report(rid)}}
 
 
 class CloseIn(BaseModel):
@@ -164,11 +202,18 @@ def portfolio_close(c: CloseIn):
     code = (c.code or "").strip()
     if not code.isdigit() or len(code) != 6:
         raise HTTPException(400, "代码必须是 6 位数字")
-    if c.price <= 0 or c.shares <= 0 or c.cost <= 0:
-        raise HTTPException(400, "价格、股数、成本必须大于 0")
-    if not (c.date or "").strip():
+    if c.price <= 0 or c.shares <= 0:
+        raise HTTPException(400, "清仓价与股数必须大于 0")
+    # 买入成本不限正负（同持仓录入）：按 (清仓价 - 成本) × 股数 的结果计算已实现盈亏。
+    date = (c.date or "").strip()
+    if not date:
         raise HTTPException(400, "请填清仓日期")
-    return {"data": pf.close_position(code, c.date.strip(), c.price, c.shares, c.cost)}
+    from datetime import datetime
+    try:
+        datetime.strptime(date, "%Y-%m-%d")
+    except ValueError:
+        raise HTTPException(400, "清仓日期格式应为 YYYY-MM-DD") from None
+    return {"data": pf.close_position(code, date, c.price, c.shares, c.cost)}
 
 
 @app.delete("/api/portfolio/close")
@@ -216,7 +261,8 @@ def market_overview():
 def market_emotion():
     """短线情绪：连板梯队 / 最高连板 / 炸板率 / 封板率 / 晋级率 / 涨跌停家数。
 
-    聚合口径、**零个股名**（个股清单破零标的红线，不做）。全站共享缓存 5 分钟。
+    含连板梯队个股清单（code/name/连板数等）——2026-07-05 起如实展示客观公开榜单（东财同款），
+    只呈现事实，不附推荐/评分/预测/买卖时机。全站共享缓存 5 分钟。
     """
     try:
         return {"data": market.get_short_term_emotion()}

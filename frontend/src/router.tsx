@@ -6,6 +6,8 @@ import { Sectors } from "@/pages/Sectors";
 import { SectorDetail } from "@/pages/SectorDetail";
 import { Portfolio } from "@/pages/Portfolio";
 import { StockData } from "@/pages/StockData";
+import { Watchlist } from "@/pages/Watchlist";
+import { MyReports } from "@/pages/MyReports";
 import { Notes } from "@/pages/Notes";
 import { Settings } from "@/pages/Settings";
 
@@ -20,6 +22,8 @@ export const router = createBrowserRouter([
       { path: "/sectors/:key", element: <SectorDetail /> },
       { path: "/portfolio", element: <Portfolio /> },
       { path: "/stock-data", element: <StockData /> },
+      { path: "/watchlist", element: <Watchlist /> },
+      { path: "/my-reports", element: <MyReports /> },
       { path: "/notes", element: <Notes /> },
       { path: "/settings", element: <Settings /> },
     ],

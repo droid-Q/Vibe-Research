@@ -1,4 +1,4 @@
-"""订阅接入：调本机已装、已登录的 AI CLI（Claude Code / Qwen / Gemini / DeepSeek），
+"""订阅接入：调本机已装、已登录的 AI CLI（Claude Code / Qwen / DeepSeek / Codex），
 用用户自己的订阅额度作答、免 API key。移植自 SDesign-opensource 的 cli-runtime（Node），
 改为 Python subprocess + 一次性（非流式）取纯文本。
 
@@ -20,7 +20,7 @@ from pathlib import Path
 
 # 提示词投递方式（各 CLI 接口不同）：
 #   system-file —— 系统提示词写临时文件用 flag 传，用户提示词走 stdin（Claude）
-#   stdin       —— 系统+用户合并走 stdin（Qwen / Gemini）
+#   stdin       —— 系统+用户合并走 stdin（Qwen / Codex）
 #   arg         —— 系统+用户合并作为最后一个位置参数（DeepSeek）
 _CLI_DEFS: dict[str, dict] = {
     "claude": {
@@ -35,8 +35,8 @@ _CLI_DEFS: dict[str, dict] = {
         "env": {},
     },
     "qwen": {"bins": ["qwen"], "delivery": "stdin", "build_args": lambda _: ["--yolo"], "env": {}},
-    "gemini": {"bins": ["gemini"], "delivery": "stdin", "build_args": lambda _: ["--yolo"],
-               "env": {"GEMINI_CLI_TRUST_WORKSPACE": "true"}},
+    # 注：Gemini CLI 已停止对个人版 Gemini Code Assist 的支持（登录报 "This client is no
+    # longer supported for Gemini Code Assist for individuals"），故已从订阅接入中移除。
     "deepseek": {"bins": ["deepseek", "codewhale"], "delivery": "arg",
                  "build_args": lambda _: ["exec", "--auto"], "env": {}},
     # Codex：codex exec 默认纯文本（进度走 stderr、最终答案走 stdout）；`-` 从 stdin 读提示词，

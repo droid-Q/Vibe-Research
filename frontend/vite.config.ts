@@ -6,7 +6,9 @@ import path from "path";
 // Phase 1 为纯前端空壳，后端未接时前端仍可独立跑（接口调用做了降级）。
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  const apiTarget = env.VITE_API_URL || "http://localhost:8900";
+  // 默认用 127.0.0.1 而非 localhost：部分 macOS/Node 会把 localhost 优先解析到 IPv6 ::1，
+  // 而后端常只监听 127.0.0.1:8900（IPv4），导致 /api 代理 ECONNREFUSED（issue #8）。
+  const apiTarget = env.VITE_API_URL || "http://127.0.0.1:8900";
 
   return {
     plugins: [react()],

@@ -27,7 +27,8 @@ const pctColor = (p: number | null | undefined) =>
   p != null && p > 0 ? "text-danger" : p != null && p < 0 ? "text-success" : "text-muted-foreground";
 const pctStr = (p: number | null | undefined) => (p == null ? "—" : `${p > 0 ? "+" : ""}${p}%`);
 // 美/港股金额（原生币种）
-const curOf = (market: string) => (market === "HK" ? "港元" : "美元");
+const curOf = (market: string) => (market === "HK" ? "港元" : market === "KR" ? "韩元" : "美元");
+const mktName = (m: string) => (m === "HK" ? "港股" : m === "KR" ? "韩股" : "美股");
 const bigMoney = (v: number | null, market: string) =>
   v == null ? "—" : v >= 1e12 ? `${(v / 1e12).toFixed(2)} 万亿${curOf(market)}` : `${(v / 1e8).toFixed(0)} 亿${curOf(market)}`;
 const round2 = (v: number | null | undefined, suffix = "") =>
@@ -184,7 +185,7 @@ export function StockData() {
     : "还没查询个股。输入 6 位代码后可让 AI 基于客观数据帮你分析。";
 
   const gAiContext = gstock
-    ? `个股（${gstock.market === "HK" ? "港股" : "美股"}）：${gstock.name}（${gstock.code}）\n` +
+    ? `个股（${mktName(gstock.market)}）：${gstock.name}（${gstock.code}）\n` +
       `现价 ${gstock.quote.price ?? "—"} · 涨跌 ${pctStr(gstock.quote.change_pct)} · 总市值 ${bigMoney(gstock.quote.mcap, gstock.market)}\n` +
       (gstock.metrics
         ? `财务(${gstock.metrics.report_date})：营收 ${bigMoney(gstock.metrics.revenue, gstock.market)}(同比${round2(gstock.metrics.revenue_yoy, "%")})、归母净利 ${bigMoney(gstock.metrics.net_profit, gstock.market)}、EPS ${gstock.metrics.eps ?? "—"}、ROE ${round2(gstock.metrics.roe, "%")}、毛利率 ${round2(gstock.metrics.gross_margin, "%")}、净利率 ${round2(gstock.metrics.net_margin, "%")}、资产负债率 ${round2(gstock.metrics.debt_ratio, "%")}`
@@ -211,9 +212,9 @@ export function StockData() {
       <div className="mb-5 flex gap-2">
         <input
           value={code}
-          onChange={(e) => setCode(e.target.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 8))}
+          onChange={(e) => setCode(e.target.value.replace(/[^a-zA-Z0-9.]/g, "").toUpperCase().slice(0, 12))}
           onKeyDown={(e) => e.key === "Enter" && run()}
-          placeholder="A 股 6 位代码，或美股 / 港股代码（AAPL / 00700）"
+          placeholder="A 股 6 位代码，或美股/港股/韩股（AAPL / 00700 / 005930.KS）"
           className="w-80 rounded-lg border border-border bg-black/20 px-3 py-2 text-sm outline-none focus:border-primary/50"
         />
         <button
@@ -240,7 +241,7 @@ export function StockData() {
               <h2 className="text-xl font-bold">{gstock.name}</h2>
               <span className="font-mono text-sm text-muted-foreground">{gstock.code}</span>
               <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] text-primary">{gstock.market}</span>
-              <span className="ml-auto text-xs text-muted-foreground">{gstock.market === "HK" ? "港股" : "美股"}</span>
+              <span className="ml-auto text-xs text-muted-foreground">{mktName(gstock.market)}</span>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[

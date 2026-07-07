@@ -48,7 +48,7 @@ export function Portfolio() {
   const add = async () => {
     if (!/^\d{6}$/.test(code.trim())) { setErr("请输入 6 位股票代码"); return; }
     const s = parseFloat(shares), c = parseFloat(cost);
-    if (!(s > 0) || !(c > 0)) { setErr("数量与成本价必须大于 0"); return; }
+    if (!(s > 0) || !Number.isFinite(c)) { setErr("数量须大于 0，成本价请填数字（可为负）"); return; }
     setAdding(true); setErr(null);
     try {
       setData(await api.addHolding(code.trim(), s, c));
@@ -68,7 +68,7 @@ export function Portfolio() {
     if (!/^\d{6}$/.test(cCode.trim())) { setErr("清仓记录：请输入 6 位代码"); return; }
     const p = parseFloat(cPrice), s = parseFloat(cShares), c = parseFloat(cCost);
     if (!cDate) { setErr("请选清仓日期"); return; }
-    if (!(p > 0) || !(s > 0) || !(c > 0)) { setErr("清仓价 / 股数 / 成本必须大于 0"); return; }
+    if (!(p > 0) || !(s > 0) || !Number.isFinite(c)) { setErr("清仓价 / 股数须大于 0，成本请填数字（可为负）"); return; }
     setClosing(true); setErr(null);
     try {
       setData(await api.closePosition(cCode.trim(), cDate, p, s, c));
@@ -151,7 +151,7 @@ export function Portfolio() {
           </div>
           <div>
             <label className="mb-1 block text-xs text-muted-foreground">成本价</label>
-            <input value={cost} onChange={(e) => setCost(e.target.value.replace(/[^\d.]/g, ""))} placeholder="如 12.5"
+            <input value={cost} onChange={(e) => setCost(e.target.value.replace(/[^\d.-]/g, "").replace(/(?!^)-/g, ""))} placeholder="如 12.5，可负"
               className="w-28 rounded-lg border border-border bg-black/20 px-3 py-2 text-sm outline-none focus:border-primary/50" />
           </div>
           <button onClick={add} disabled={adding}
@@ -238,7 +238,7 @@ export function Portfolio() {
           </div>
           <div>
             <label className="mb-1 block text-xs text-muted-foreground">买入成本</label>
-            <input value={cCost} onChange={(e) => setCCost(e.target.value.replace(/[^\d.]/g, ""))} placeholder="成本价"
+            <input value={cCost} onChange={(e) => setCCost(e.target.value.replace(/[^\d.-]/g, "").replace(/(?!^)-/g, ""))} placeholder="成本价，可负"
               className="w-24 rounded-lg border border-border bg-black/20 px-3 py-2 text-sm outline-none focus:border-primary/50" />
           </div>
           <button onClick={addClose} disabled={closing}

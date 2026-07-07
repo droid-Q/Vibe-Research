@@ -84,7 +84,7 @@ export function Settings() {
             <h3 className="font-semibold">订阅接入</h3>
             {mode === "subscription" && <Check className="ml-auto h-4 w-4 text-primary" />}
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">调本机已登录的 AI CLI（Claude Code / Qwen / Gemini / DeepSeek…），用订阅额度，<b className="text-foreground">免 API key</b>。需后端在本机跑。</p>
+          <p className="mt-1 text-xs text-muted-foreground">调本机已登录的 AI CLI（Claude Code / Qwen / DeepSeek / Codex…），用订阅额度，<b className="text-foreground">免 API key</b>。需后端在本机跑。</p>
         </GlassCard>
 
         <GlassCard glow={mode === "api"} onClick={() => setMode("api")}

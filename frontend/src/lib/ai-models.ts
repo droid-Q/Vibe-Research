@@ -16,7 +16,6 @@ export type ProviderId =
   | "openai-compatible"
   | "cli-claude"
   | "cli-qwen"
-  | "cli-gemini"
   | "cli-deepseek"
   | "cli-codex"
   | "cli-opencode"
@@ -50,15 +49,14 @@ export const aiModels: ModelConfig[] = [
   // —— 订阅版（免 API key，调本机已登录的 CLI）——
   { id: "claude-code", name: "Claude Code", description: "用本机 Claude 订阅", provider: "cli-claude" },
   { id: "qwen-code", name: "Qwen Code", description: "通义 Qwen Code 订阅", provider: "cli-qwen" },
-  { id: "gemini-cli", name: "Gemini CLI", description: "Google Gemini 订阅", provider: "cli-gemini" },
   { id: "deepseek-cli", name: "DeepSeek CLI", description: "DeepSeek 本机 CLI 订阅", provider: "cli-deepseek" },
   { id: "codex", name: "Codex", description: "OpenAI Codex 订阅（需 codex login 登录）", provider: "cli-codex" },
   { id: "opencode", name: "OpenCode", description: "OpenCode 订阅", provider: "cli-opencode", comingSoon: true },
   { id: "cursor-agent", name: "Cursor Agent", description: "Cursor Agent 订阅", provider: "cli-cursor", comingSoon: true },
   { id: "kimi", name: "Kimi", description: "Kimi 订阅", provider: "cli-kimi", comingSoon: true },
   // —— API 版（填自己的 key）——
-  { id: "deepseek-chat", name: "DeepSeek V3", description: "DeepSeek 官方 · 性价比高", provider: "deepseek" },
-  { id: "deepseek-reasoner", name: "DeepSeek R1", description: "DeepSeek 官方 · 推理模型", provider: "deepseek" },
+  { id: "deepseek-v4-flash", name: "DeepSeek V4 Flash", description: "DeepSeek 官方 · 快而省 · 思考/非思考双模", provider: "deepseek" },
+  { id: "deepseek-v4-pro", name: "DeepSeek V4 Pro", description: "DeepSeek 官方 · 旗舰 · 最强推理", provider: "deepseek" },
   { id: "deepseek-ai/DeepSeek-V3", name: "SiliconFlow · DeepSeek V3", description: "硅基流动", provider: "silicon" },
   { id: "gpt-4o", name: "OpenAI GPT-4o", description: "OpenAI", provider: "openai" },
   { id: "MiniMax-M2", name: "MiniMax M2", description: "MiniMax 海螺", provider: "minimax" },
