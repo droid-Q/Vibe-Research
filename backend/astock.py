@@ -706,19 +706,25 @@ def dragon_tiger_board(code: str, trade_date: str | None = None, look_back: int 
 
 
 def lockup_expiry(code: str, trade_date: str | None = None, forward_days: int = 90) -> dict:
-    """限售解禁日历：历史解禁记录 + 未来 N 天待解禁事件。"""
+    """限售解禁日历：历史解禁记录 + 未来 N 天待解禁事件。
+
+    字段随东财 2026 改列名同步（a-stock-data §3.6）：旧 LIMITED_STOCK_TYPE/FREE_SHARES_NUM
+    已废、致 type/shares 恒空 → 改 FREE_SHARES_TYPE/FREE_SHARES，并补 able_shares（实际可流通股数）。
+    """
     trade_date = trade_date or datetime.now().strftime("%Y-%m-%d")
     history = [{
-        "date": str(r.get("FREE_DATE", ""))[:10], "type": r.get("LIMITED_STOCK_TYPE", ""),
-        "shares": r.get("FREE_SHARES_NUM", 0), "ratio": r.get("FREE_RATIO", 0),
+        "date": str(r.get("FREE_DATE", ""))[:10], "type": r.get("FREE_SHARES_TYPE", ""),
+        "shares": r.get("FREE_SHARES", 0), "able_shares": r.get("ABLE_FREE_SHARES", 0),
+        "ratio": r.get("FREE_RATIO", 0),
     } for r in eastmoney_datacenter(
         "RPT_LIFT_STAGE", filter_str=f'(SECURITY_CODE="{code}")',
         page_size=15, sort_columns="FREE_DATE", sort_types="-1")]
 
     end = (datetime.strptime(trade_date, "%Y-%m-%d") + timedelta(days=forward_days)).strftime("%Y-%m-%d")
     upcoming = [{
-        "date": str(r.get("FREE_DATE", ""))[:10], "type": r.get("LIMITED_STOCK_TYPE", ""),
-        "shares": r.get("FREE_SHARES_NUM", 0), "ratio": r.get("FREE_RATIO", 0),
+        "date": str(r.get("FREE_DATE", ""))[:10], "type": r.get("FREE_SHARES_TYPE", ""),
+        "shares": r.get("FREE_SHARES", 0), "able_shares": r.get("ABLE_FREE_SHARES", 0),
+        "ratio": r.get("FREE_RATIO", 0),
     } for r in eastmoney_datacenter(
         "RPT_LIFT_STAGE",
         filter_str=f'(SECURITY_CODE="{code}")(FREE_DATE>=\'{trade_date}\')(FREE_DATE<=\'{end}\')',
@@ -791,6 +797,7 @@ def investor_qa(code: str, page_size: int = 30) -> list[dict]:
 def industry_comparison(top_n: int = 20) -> dict:
     """全行业涨跌幅排名（东财行业板块，~100 个行业）：板块级涨跌 / 涨跌家数 / 领涨。"""
     params = {"pn": "1", "pz": "100", "po": "1", "np": "1", "fltt": "2", "invt": "2",
+              "fid": "f3",  # fid=f3 + po=1：按涨跌幅降序，否则 top/bottom 切片非涨幅序（a-stock-data §3.7）
               "fs": "m:90+t:2", "fields": "f2,f3,f4,f12,f13,f14,f104,f105,f128,f136,f140,f141,f207"}
     try:
         d = em_get("https://push2.eastmoney.com/api/qt/clist/get",

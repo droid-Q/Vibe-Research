@@ -26,7 +26,7 @@ import portfolio as pf
 import market
 import myreports as mr
 
-app = FastAPI(title="Vibe-Research API", version="0.1.2")
+app = FastAPI(title="Vibe-Research API", version="0.1.3")
 
 # 每半小时后台刷新持仓数据
 pf.start_scheduler(1800)
@@ -70,7 +70,7 @@ def _validate(code: str) -> str:
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "service": "vibe-research-api", "version": "0.1.2"}
+    return {"ok": True, "service": "vibe-research-api", "version": "0.1.3"}
 
 
 class LLMConfig(BaseModel):
